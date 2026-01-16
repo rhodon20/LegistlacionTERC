@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulador Opo 2018-2025</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1e40af;
+            --success: #22c55e;
+            --error: #ef4444;
+            --bg: #f3f4f6;
+            --card: #ffffff;
+            --text: #1f2937;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        #app {
+            width: 100%;
+            max-width: 600px;
+            background: var(--bg);
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header */
+        header {
+            background: var(--primary);
+            color: white;
+            padding: 1rem;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        h1 { margin: 0; font-size: 1.2rem; }
+        h2 { margin: 0; font-size: 1rem; font-weight: normal; opacity: 0.9; }
+
+        /* Contenedores de Pantallas */
+        .screen {
+            padding: 20px;
+            display: none; /* Se ocultan por defecto */
+            flex-direction: column;
+            gap: 15px;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .screen.active {
+            display: flex;
+        }
+
+        /* Menú */
+        .menu-btn {
+            background: white;
+            border: 1px solid #ddd;
+            padding: 20px;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text);
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            transition: transform 0.1s, box-shadow 0.1s;
+        }
+
+        .menu-btn:active {
+            transform: scale(0.98);
+            background: #f9fafb;
+        }
+
+        /* Tarjeta de Pregunta */
+        .question-card {
+            background: var(--card);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+
+        .q-number {
+            color: var(--primary);
+            font-weight: bold;
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        .q-text {
+            font-size: 1.1rem;
+            line-height: 1.5;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+
+        /* Opciones */
+        .options-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .option-btn {
+            background: white;
+            border: 2px solid #e5e7eb;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: left;
+            font-size: 1rem;
+            color: var(--text);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .option-btn:hover { border-color: #d1d5db; }
+        
+        /* Estados de respuesta */
+        .option-btn.correct {
+            background-color: #dcfce7;
+            border-color: var(--success);
+            color: #14532d;
+        }
+
+        .option-btn.wrong {
+            background-color: #fee2e2;
+            border-color: var(--error);
+            color: #7f1d1d;
+        }
+
+        .option-btn.disabled {
+            pointer-events: none;
+            opacity: 0.7;
+        }
+
+        /* Feedback y Navegación */
+        #feedback-area {
+            margin-top: 15px;
+            padding: 15px;
+            background: #fffbeb;
+            border-left: 4px solid #f59e0b;
+            border-radius: 4px;
+            display: none;
+        }
+
+        #btn-next {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 10px;
+            display: none;
+        }
+
+        /* Resultados */
+        .score-box {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        .big-score {
+            font-size: 3rem;
+            font-weight: 800;
+            color: var(--primary);
+            margin: 10px 0;
+        }
+
+        .result-msg { font-size: 1.2rem; margin-bottom: 20px; }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Utilidades */
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+<div id="app">
+    <header>
+        <h1>⚖️ Legislación 2018-2025</h1>
+        <h2 id="header-subtitle">Simulador Oficial</h2>
+    </header>
+
+    <div id="screen-menu" class="screen active">
+        <div style="text-align: center; margin-bottom: 20px;">
+            <p>Selecciona el tipo de test:</p>
+        </div>
+        <button class="menu-btn" onclick="iniciarTest(10)">📝 Test Rápido (10)</button>
+        <button class="menu-btn" onclick="iniciarTest(25)">📚 Test Estándar (25)</button>
+        <button class="menu-btn" onclick="iniciarTest(50)">🔥 Test Completo (50)</button>
+    </div>
+
+    <div id="screen-quiz" class="screen">
+        <div class="question-card">
+            <span class="q-number" id="q-progress">Pregunta 1/10</span>
+            <div class="q-text" id="q-text">Cargando pregunta...</div>
+            
+            <div class="options-grid" id="options-container">
+                </div>
+
+            <div id="feedback-area">
+                <strong>💡 Explicación:</strong>
+                <p id="explanation-text" style="margin: 5px 0 0 0;"></p>
+            </div>
+        </div>
+
+        <button id="btn-next" onclick="siguientePregunta()">Siguiente Pregunta ➡️</button>
+    </div>
+
+    <div id="screen-results" class="screen">
+        <div class="score-box">
+            <h3>Resultados del Test</h3>
+            <div class="big-score" id="final-score">0.0</div>
+            <p class="result-msg" id="final-msg">Nota final</p>
+            <div style="display: flex; justify-content: space-around; margin-bottom: 20px;">
+                <span style="color: var(--success)">✅ Aciertos: <b id="total-correct">0</b></span>
+                <span style="color: var(--error)">❌ Fallos: <b id="total-wrong">0</b></span>
+            </div>
+        </div>
+        <button class="menu-btn" style="background: var(--primary); color: white;" onclick="mostrarMenu()">🔄 Volver al Menú</button>
+    </div>
+</div>
+
+<script>
+    // ==========================================
+    // BASE DE DATOS
+    // ==========================================
+    
+    // 👇👇👇 PEGA AQUÍ EL CONTENIDO DE TU VARIABLE PREGUNTAS_LEGISLACION 👇👇👇
+    // (Borra el array de ejemplo y pega el tuyo completo entre los corchetes)
+    
+    const BASE_DATOS = [
+    <!-- # --- 2018 --- -->
+    {"pregunta": "La Constitución Española de 1978, en su Capítulo 2º, Sección 1ª, 'De los derechos fundamentales y de las libertades públicas', reconoce los derechos:", "opciones": ["A la inviolabilidad del domicilio, de cátedra y el derecho a la negociación colectiva", "A la libertad de culto, el derecho al honor y a la libertad de pensamiento", "De asociación, de participación en los asuntos públicos y de libertad de empresa", "Todas las anteriores son correctas"], "correcta": "A la libertad de culto, el derecho al honor y a la libertad de pensamiento", "explicacion": "Examen 2018. Sección 1ª (Arts 15-29)."},
+    {"pregunta": "Según la Constitución Española de 1978, el reconocimiento del derecho a la propiedad privada y a la herencia...", "opciones": ["No está limitado por las leyes", "Está limitado dependiendo del hecho causante que los motivó", "La función social de estos derechos delimitará su contenido", "La propiedad privada sí podrá ser limitada pero el derecho a la herencia no"], "correcta": "La función social de estos derechos delimitará su contenido", "explicacion": "Examen 2018. Art 33.2 CE."},
+    {"pregunta": "¿A quién corresponde la iniciativa legislativa?", "opciones": ["Al Gobierno, al Congreso y al Senado", "Al Gobierno, al Congreso, al Senado y a la iniciativa popular si reúne un mínimo de 300.000 firmas acreditadas", "Al Gobierno, al Congreso y a las Comunidades Autónomas", "Al Gobierno, al Congreso, al Senado, a las Asambleas de las CCAA y a la iniciativa popular (500.000 firmas)"], "correcta": "Al Gobierno, al Congreso, al Senado, a las Asambleas de las CCAA y a la iniciativa popular (500.000 firmas)", "explicacion": "Examen 2018. Art 87 CE."},
+    {"pregunta": "La Constitución Española recoge el derecho a la justicia gratuita en su artículo 119...", "opciones": ["Para quienes acrediten insuficiencia de recursos para litigar", "Para los anteriores, pero solo en los procesos civiles", "Para los anteriores, pero solo en los procesos penales", "Para los anteriores, pero solo en los procesos contencioso-administrativos"], "correcta": "Para quienes acrediten insuficiencia de recursos para litigar", "explicacion": "Examen 2018. Art 119 CE."},
+    {"pregunta": "Diga qué afirmación de las siguientes, en relación con el poder ejecutivo y el poder judicial, es correcta:", "opciones": ["El poder judicial ejerce la potestad jurisdiccional y el poder ejecutivo hace ejecutar lo juzgado", "El principio de unidad jurisdiccional es la base de la unidad de acción entre ambos poderes", "La estructura de poderes del Estado diferencia tres poderes, entre los cuales, el poder ejecutivo es independiente de los otros", "Los Jueces y Magistrados, integrantes del poder judicial, podrán ser separados, suspendidos, etc., por el Gobierno sin expediente previo"], "correcta": "La estructura de poderes del Estado diferencia tres poderes, entre los cuales, el poder ejecutivo es independiente de los otros", "explicacion": "Examen 2018."},
+    {"pregunta": "¿Cuál es el porcentaje necesario, según la Constitución Española, para ser aprobado un proyecto de reforma constitucional (procedimiento ordinario)?", "opciones": ["Mayoría simple de ambas Cámaras", "Mayoría de tres quintos de cada una de las Cámaras", "Mayoría de tres quintos de ambas Cámaras (en votación conjunta)", "Mayoría simple de cada Cámara"], "correcta": "Mayoría de tres quintos de cada una de las Cámaras", "explicacion": "Examen 2018. Art 167."},
+    {"pregunta": "¿Quiénes componen el Gobierno?", "opciones": ["Presidente, Vicepresidentes en su caso, Ministros y demás miembros que establezca la Ley", "Presidente y Ministros", "Presidente, Ministros y demás miembros que establezca la Ley", "Presidente, Ministros y Secretarios de Estado"], "correcta": "Presidente, Vicepresidentes en su caso, Ministros y demás miembros que establezca la Ley", "explicacion": "Examen 2018. Art 98.1 CE."},
+    {"pregunta": "¿Qué es la Administración General del Estado?", "opciones": ["Es una organización pública que sirve al Gobierno para el control exhaustivo de sus ciudadanos", "Es el instrumento del Gobierno para desarrollar e implementar sus políticas públicas o prestar servicios", "Es el instrumento del Gobierno para el ejercicio del poder en relación a la acción punitiva", "Todas las respuestas anteriores son correctas"], "correcta": "Es el instrumento del Gobierno para desarrollar e implementar sus políticas públicas o prestar servicios", "explicacion": "Examen 2018."},
+    {"pregunta": "La Ley 40/2015 establece la organización central de la AGE compuesta por órganos superiores y directivos. ¿Cuáles son órganos superiores?", "opciones": ["Los Vicepresidentes, Ministros y Secretarios de Estado", "Los Delegados de Gobierno, Ministros y Subdirectores Generales", "Los Ministros, los Consejeros de las Comunidades Autónomas y los Directores Generales", "Los Ministros, los Secretarios de Estado, los Subsecretarios y Secretarios Generales"], "correcta": "Los Ministros, los Secretarios de Estado, los Subsecretarios y Secretarios Generales", "explicacion": "Examen 2018. (Nota: Según Ley 40/2015 estrictamente son Ministros y SE, pero la plantilla oficial dio esta opción)."},
+    {"pregunta": "¿Cómo se crean, modifican y suprimen los órganos y unidades administrativas (niveles inferiores a Subdirección)?", "opciones": ["A propuesta del Presidente del Gobierno en Consejo de Ministros", "A propuesta del Ministro de Hacienda, por iniciativa del Ministro interesado", "Por Real Decreto del Consejo de Ministros", "Por orden del Ministro respectivo, previa autorización del Ministro de Hacienda y Administraciones Públicas"], "correcta": "Por Real Decreto del Consejo de Ministros", "explicacion": "Examen 2018. (Plantilla oficial)."},
+    {"pregunta": "Los órganos directivos encargados de los servicios comunes del Ministerio son:", "opciones": ["Los Subsecretarios", "Los Secretarios Generales", "Los Subsecretarios y los Secretarios Generales", "Los Secretarios Generales y los Secretarios Generales Técnicos"], "correcta": "Los Subsecretarios", "explicacion": "Examen 2018. Art 63 Ley 40/2015."},
+    {"pregunta": "Según el artículo 69 de la Ley 40/2015, en cada Comunidad Autónoma existen:", "opciones": ["Una Delegación del Gobierno en cada provincia", "Una Delegación del Gobierno y una Subdelegación del Gobierno en CCAA con más de tres provincias", "Una Delegación del Gobierno en la CCAA y una Subdelegación del Gobierno por cada provincia", "Una Delegación del Gobierno y una Subdelegación de Gobierno solo en las CCAA insulares"], "correcta": "Una Delegación del Gobierno en la CCAA y una Subdelegación del Gobierno por cada provincia", "explicacion": "Examen 2018."},
+    {"pregunta": "¿A quién representan los Delegados del Gobierno y de quién dependen?", "opciones": ["Representan a la Nación española y dependen de Hacienda", "Representan al Gobierno de España y dependen orgánicamente del Presidente del Gobierno y funcionalmente del Ministerio competente", "Representan al Gobierno de España y dependen orgánicamente del Consejo de Ministros", "Ninguna es correcta"], "correcta": "Representan al Gobierno de España y dependen orgánicamente del Presidente del Gobierno y funcionalmente del Ministerio competente", "explicacion": "Examen 2018."},
+    {"pregunta": "El acto administrativo está regulado en:", "opciones": ["Ley 39/2015, de 1 de octubre, del Procedimiento Administrativo Común", "Ley 40/2015, de 1 de octubre, de Régimen Jurídico", "Ley 50/1997, de 27 de noviembre, del Gobierno", "Ley 30/1992 (Derogada)"], "correcta": "Ley 39/2015, de 1 de octubre, del Procedimiento Administrativo Común", "explicacion": "Examen 2018."},
+    {"pregunta": "Los actos administrativos que incurren en cualquier infracción del ordenamiento jurídico, incluso la desviación de poder:", "opciones": ["Son nulos de pleno derecho", "Son anulables", "Si se trata de defecto de forma, es anulable en cualquier caso", "Son nulos cuando se establezca expresamente"], "correcta": "Son anulables", "explicacion": "Examen 2018. Art 48 Ley 39/2015."},
+    {"pregunta": "Según el artículo 89 del TREBEP, la excedencia por cuidado de hijos o familiares:", "opciones": ["Tendrán derecho a disfrutarla respecto de familiares de primer grado", "Tendrán derecho a disfrutarla por un periodo máximo de 3 años, reservándose el puesto de trabajo (los dos primeros años)", "Tendrán derecho a participar en cursos de formación durante esta situación", "Requiere un periodo mínimo de servicios de 5 años"], "correcta": "Tendrán derecho a participar en cursos de formación durante esta situación", "explicacion": "Examen 2018."},
+    {"pregunta": "Señale la situación administrativa cuando los funcionarios son designados asesores de las Asambleas Legislativas de las CCAA:", "opciones": ["Servicios especiales", "Servicios en otras Administraciones Públicas", "Servicio en Comunidades Autónomas", "Excedencia voluntaria"], "correcta": "Servicios especiales", "explicacion": "Examen 2018."},
+    {"pregunta": "Según el TREBEP, los empleados públicos se clasifican en:", "opciones": ["Funcionarios de carrera y funcionarios interinos", "Funcionarios de carrera, funcionarios interinos y personal eventual", "Funcionarios de carrera, personal laboral (fijo/temporal)", "Funcionarios de carrera, funcionarios interinos, personal laboral y personal eventual"], "correcta": "Funcionarios de carrera, funcionarios interinos, personal laboral y personal eventual", "explicacion": "Examen 2018. Art 8 TREBEP."},
+    {"pregunta": "Los funcionarios de carrera que obtengan destino en otra Administración Pública a través de movilidad quedarán en situación de...", "opciones": ["Excedencia voluntaria por prestación de servicios en el sector público", "Servicio en Comunidades Autónomas", "Servicio en otras Administraciones Públicas", "Servicio activo con destino en Administración distinta"], "correcta": "Servicio en otras Administraciones Públicas", "explicacion": "Examen 2018. Art 88 TREBEP."},
+    {"pregunta": "Los funcionarios públicos o personal laboral que indujeren a otros a la realización de actos o conductas constitutivas de falta disciplinaria:", "opciones": ["Incurrirán en la misma responsabilidad que estos", "Incurrirán en responsabilidad disciplinaria atenuada", "Incurrirán en responsabilidad disciplinaria agravada", "No incurrirán en responsabilidad disciplinaria"], "correcta": "Incurrirán en la misma responsabilidad que estos", "explicacion": "Examen 2018. Art 94 TREBEP."},
+    {"pregunta": "El régimen de prescripción de las faltas o infracciones disciplinarias de los empleados públicos es:", "opciones": ["Muy graves 6 años, graves 2 años, leves 6 meses", "Muy graves 6 años, graves 3 años, leves 1 mes", "Muy graves 3 años, graves 2 años, leves 6 meses", "Muy graves 1 año, graves 3 meses, leves 1 mes"], "correcta": "Muy graves 3 años, graves 2 años, leves 6 meses", "explicacion": "Examen 2018. Art 97 TREBEP."},
+    {"pregunta": "El artículo 59 del TREBEP determina que en las ofertas de empleo público se reservará para personas con discapacidad:", "opciones": ["Un cupo no inferior al 10%", "Un cupo no inferior al 10% (2% discapacidad intelectual)", "Un cupo no inferior al 7% (del cual al menos el 2% para discapacidad intelectual)", "No fija cupo mínimo"], "correcta": "Un cupo no inferior al 7% (del cual al menos el 2% para discapacidad intelectual)", "explicacion": "Examen 2018."},
+    {"pregunta": "Según la Ley Orgánica 3/2007, para contribuir a un reparto más equilibrado de las responsabilidades se reconoce a los padres el derecho a:", "opciones": ["Un permiso y prestación por paternidad", "Un subsidio especial", "Una excedencia por interés particular", "Una reducción de jornada"], "correcta": "Un permiso y prestación por paternidad", "explicacion": "Examen 2018."},
+    {"pregunta": "El Consejo de Transparencia y Buen Gobierno actúa:", "opciones": ["Con autonomía y plena independencia", "Bajo la dependencia orgánica de la Comisión de Transparencia", "Bajo la dependencia funcional de la Comisión", "Bajo la dependencia del Consejo de Ministros"], "correcta": "Con autonomía y plena independencia", "explicacion": "Examen 2018."},
+    {"pregunta": "Se entenderá por composición equilibrada en Órganos de Selección la presencia de mujeres y hombres de forma que las personas de cada sexo:", "opciones": ["No superen el 70% ni sean menos del 50%", "No superen el 60% ni sean menos del 40%", "No superen el 50%", "No superen el 60% ni sean menos del 50%"], "correcta": "No superen el 60% ni sean menos del 40%", "explicacion": "Examen 2018."},
+
+    {"pregunta": "¿Cuántos títulos tiene la Constitución Española de 1978?", "opciones": ["10 títulos", "Un título preliminar y 11 títulos más", "9 títulos", "Un título preliminar y 10 títulos más"], "correcta": "Un título preliminar y 10 títulos más", "explicacion": "Examen 2019."},
+    {"pregunta": "¿Cuál de estos principios es un principio constitucional?", "opciones": ["El principio de supremacía de la ley", "El principio de territorialidad de las Comunidades Autónomas", "El principio de ejecución administrativa", "El principio de actos jurídicos nulos"], "correcta": "El principio de supremacía de la ley", "explicacion": "Examen 2019."},
+    {"pregunta": "¿De quién emanan los poderes del Estado?", "opciones": ["Del Gobierno (Presidente y Ministros)", "De las Administraciones Públicas y sus dirigentes", "Del Gobierno y del pueblo español", "Del pueblo español"], "correcta": "Del pueblo español", "explicacion": "Examen 2019."},
+    {"pregunta": "La reforma de nuestra Constitución puede ser solicitada por:", "opciones": ["El Gobierno, el Congreso, el Senado, las Comunidades Autónomas y por iniciativa popular", "El Gobierno, el Congreso, el Senado y por iniciativa popular", "El Gobierno, el Congreso, el Senado y las Comunidades Autónomas", "El Congreso, el Senado, las Comunidades Autónomas y por iniciativa popular"], "correcta": "El Gobierno, el Congreso, el Senado y las Comunidades Autónomas", "explicacion": "Examen 2019."},
+    {"pregunta": "Según el artículo 62 de la Constitución Española de 1978, corresponde al Rey:", "opciones": ["Proponer leyes al Parlamento", "Aprobar las leyes que le propone el Parlamento", "Rechazar las leyes lesivas", "Sancionar y promulgar las leyes"], "correcta": "Sancionar y promulgar las leyes", "explicacion": "Examen 2019."},
+    {"pregunta": "Las Administraciones Públicas que establezcan medidas que limiten el ejercicio de derechos individuales o colectivos, ¿deben motivar la necesidad del acto?", "opciones": ["Deben motivar exclusivamente su necesidad", "Deben motivar su necesidad y justificar su adecuación", "Deben motivar su necesidad, pero no justificar si son adecuados", "Las Administraciones Públicas no tienen que motivar sus decisiones"], "correcta": "Deben motivar su necesidad y justificar su adecuación", "explicacion": "Examen 2019."},
+    {"pregunta": "Los actos producidos por autoridades y personal al servicio de las Administraciones Públicas en las que concurran motivos de abstención:", "opciones": ["Son nulos de pleno derecho", "Despliegan todos sus efectos en todos los casos", "Su concurrencia no implicará, necesariamente, en todo caso, la invalidez de los actos en que han intervenido", "Depende de la Administración Pública de que se trate"], "correcta": "Su concurrencia no implicará, necesariamente, en todo caso, la invalidez de los actos en que han intervenido", "explicacion": "Examen 2019."},
+    {"pregunta": "¿Las Administraciones Públicas tienen el deber de colaborar entre ellas?", "opciones": ["Sí. Así está recogido en el artículo 141 de la Ley 40/2015", "No, porque cada Administración Pública tiene sus competencias", "Sí. Así está regulado en el artículo 141 de la Ley 39/2015", "La normativa administrativa no dice nada sobre este tema"], "correcta": "Sí. Así está recogido en el artículo 141 de la Ley 40/2015", "explicacion": "Examen 2019."},
+    {"pregunta": "El nombramiento de los Secretarios de Estado se realiza:", "opciones": ["Por decisión del Presidente del Gobierno expresada por Real Decreto Legislativo", "Por decisión del Ministro del Departamento expresada por Orden Ministerial", "Por decisión del Ministro sin necesidad de Orden Ministerial", "Por Real Decreto del Consejo de Ministros, a propuesta del Presidente del Gobierno o del Ministro a cuyo Departamento vaya a pertenecer"], "correcta": "Por Real Decreto del Consejo de Ministros, a propuesta del Presidente del Gobierno o del Ministro a cuyo Departamento vaya a pertenecer", "explicacion": "Examen 2019."},
+    {"pregunta": "¿Quién asume las competencias del Presidente del Gobierno en su ausencia?", "opciones": ["El o los Vicepresidentes, y en su defecto, los Ministros", "Solo el o los Vicepresidentes", "Solo los Ministros", "El Rey"], "correcta": "El o los Vicepresidentes, y en su defecto, los Ministros", "explicacion": "Examen 2019."},
+    {"pregunta": "¿Qué consecuencias tiene el vicio de forma de un acto administrativo?", "opciones": ["Produce la anulabilidad del acto administrativo si este carece de los requisitos formales indispensables para alcanzar su fin o produce indefensión", "Produce la nulidad, en todo caso", "Produce la anulabilidad solamente si el acto proviene de un órgano territorial", "Produce la nulidad o anulabilidad según establezca el poder judicial"], "correcta": "Produce la anulabilidad del acto administrativo si este carece de los requisitos formales indispensables para alcanzar su fin o produce indefensión", "explicacion": "Examen 2019."},
+    {"pregunta": "Según la ley 39/2015 en cuanto al cómputo de los plazos, cuando estén señalados en días ¿Cómo se calculan?", "opciones": ["Desde el mismo día de la publicación o notificación", "A partir del día siguiente a aquél en que tenga lugar la notificación o publicación", "La Ley no establece normas sobre cómputo de plazos", "Desde el mismo día si son naturales"], "correcta": "A partir del día siguiente a aquél en que tenga lugar la notificación o publicación", "explicacion": "Examen 2019."},
+    {"pregunta": "¿La Administración podrá convalidar los actos anulables?", "opciones": ["No", "Solo si son actos administrativos consolidados", "Sí, cuando la autoridad competente así lo establezca", "Sí, subsanando los vicios de que adolece"], "correcta": "Sí, subsanando los vicios de que adolece", "explicacion": "Examen 2019."},
+    {"pregunta": "¿Cómo pueden iniciarse los procedimientos administrativos?", "opciones": ["De oficio o a solicitud del interesado", "Es potestad del interesado iniciar el procedimiento", "De oficio, en todo caso", "Únicamente por los órganos sancionadores"], "correcta": "De oficio o a solicitud del interesado", "explicacion": "Examen 2019."},
+    {"pregunta": "¿Por qué vías podrán exigir los particulares a las Administraciones Públicas la responsabilidad en que hubieren incurrido sus autoridades y personal?", "opciones": ["Por las vías penal, civil y administrativa", "Por la vía penal y civil derivada del delito que se cometa", "Solo se podrá exigir responsabilidad al personal por vía administrativa", "No se puede exigir responsabilidad alguna"], "correcta": "Por la vía penal y civil derivada del delito que se cometa", "explicacion": "Examen 2019 (Plantilla oficial B)."},
+    {"pregunta": "Según el TREBEP, a los funcionarios de carrera procederá declararlos de oficio en excedencia voluntaria por interés particular:", "opciones": ["Cuando sean removidos de la plaza", "Cuando finalizada la causa que determinó el pase a una situación distinta a la de servicio activo, se incumpla la obligación de solicitar el reingreso", "Únicamente será posible declararlos de oficio en excedencia forzosa", "Transcurridos dos años desde servicios especiales"], "correcta": "Cuando finalizada la causa que determinó el pase a una situación distinta a la de servicio activo, se incumpla la obligación de solicitar el reingreso", "explicacion": "Examen 2019."},
+    {"pregunta": "Según el artículo 39 del TREBEP, los órganos específicos de representación de los funcionarios son:", "opciones": ["El Comité de Empresa y las Juntas de Personal", "Los Delegados de Personal y el Comité de Empresa", "Los Delegados de Personal y las Juntas de Personal", "La Junta Laboral y las Juntas de Personal"], "correcta": "Los Delegados de Personal y las Juntas de Personal", "explicacion": "Examen 2019."},
+    {"pregunta": "Cuando los funcionarios de carrera desempeñen cargos electivos retribuidos y de dedicación exclusiva en una entidad local serán declarados en:", "opciones": ["Excedencia", "Excedencia voluntaria", "Servicios especiales", "Servicio en otras Administraciones Públicas"], "correcta": "Servicios especiales", "explicacion": "Examen 2019."},
+    {"pregunta": "Por ser preciso atender el cuidado de un familiar de primer grado por razones de enfermedad muy grave, el funcionario tendrá derecho a:", "opciones": ["Solicitar una reducción de hasta el 50% de la jornada, con carácter retribuido y por el plazo máximo de un mes", "Solicitar una reducción de hasta el 50%, retribuido, máximo tres meses", "Solicitar una reducción de hasta el 50%, con disminución proporcional de retribuciones, máximo un mes", "Solicitar una reducción de hasta el 50%, con disminución proporcional, máximo dos meses"], "correcta": "Solicitar una reducción de hasta el 50% de la jornada, con carácter retribuido y por el plazo máximo de un mes", "explicacion": "Examen 2019."},
+    {"pregunta": "El cumplimiento del Plan para la Igualdad en la AGE será evaluado anualmente por:", "opciones": ["El Consejo de Ministros", "El Congreso de los Diputados", "Los Ministerios", "La Comisión de Igualdad del Congreso de los Diputados"], "correcta": "El Consejo de Ministros", "explicacion": "Examen 2019."},
+    {"pregunta": "En el nombramiento de los titulares de órganos directivos de la AGE, el Gobierno atenderá al principio de:", "opciones": ["Paridad", "Discriminación positiva", "Presencia equilibrada de mujeres y hombres", "No discriminación por razón de sexo"], "correcta": "Presencia equilibrada de mujeres y hombres", "explicacion": "Examen 2019."},
+    {"pregunta": "El órgano colegiado responsable de la coordinación de las políticas de igualdad en los ministerios es:", "opciones": ["La Comisión Nacional para la Igualdad", "El Instituto de la Mujer", "La Comisión Interministerial de Igualdad entre mujeres y hombres", "El Consejo de Ministros"], "correcta": "La Comisión Interministerial de Igualdad entre mujeres y hombres", "explicacion": "Examen 2019."},
+    {"pregunta": "El Presidente del Consejo de Transparencia y Buen Gobierno será nombrado por un periodo no renovable de:", "opciones": ["Cuatro años", "Cinco años", "Tres años", "Dos años"], "correcta": "Cinco años", "explicacion": "Examen 2019."},
+    {"pregunta": "La resolución de acceso a la información pública deberá notificarse en el plazo máximo de:", "opciones": ["Diez días (ampliable otros 10)", "Un mes (ampliable otro mes)", "Un mes (ampliable 15 días)", "Un mes (ampliable 10 días)"], "correcta": "Un mes (ampliable otro mes)", "explicacion": "Examen 2019."},
+    {"pregunta": "Formará parte de la Comisión de Transparencia y Buen Gobierno:", "opciones": ["Un representante del Consejo de Estado", "Un representante del Defensor del Pueblo", "Un representante de la Secretaría de Estado de Hacienda", "Un representante de la FEMP"], "correcta": "Un representante del Defensor del Pueblo", "explicacion": "Examen 2019."},
+
+
+    {"pregunta": "La estructura de la Constitución Española de 1978 consiste en:", "opciones": ["Un Título Preliminar, diez títulos más, y diez disposiciones transitorias", "Un Preámbulo, un Título Preliminar, diez títulos más, cuatro disposiciones adicionales, diez disposiciones transitorias y una disposición derogatoria", "Un Preámbulo, un Título Preliminar, diez títulos más, cuatro disposiciones adicionales, nueve disposiciones transitorias, una disposición derogatoria y una disposición final", "Los mismos apartados que el modelo establecido por la Unión Europea"], "correcta": "Un Preámbulo, un Título Preliminar, diez títulos más, cuatro disposiciones adicionales, nueve disposiciones transitorias, una disposición derogatoria y una disposición final", "explicacion": "Examen 2020."},
+    {"pregunta": "Según la Constitución Española de 1978, corresponde al Rey:", "opciones": ["Dictar las leyes junto con las Cámaras legislativas", "Sancionar y promulgar las leyes", "Elaborar, sancionar y promulgar las leyes", "Presentar los Proyectos de Ley a las Cámaras"], "correcta": "Sancionar y promulgar las leyes", "explicacion": "Examen 2020."},
+    {"pregunta": "¿Quién ejerce la función ejecutiva en España, según la Constitución Española de 1978?", "opciones": ["El Gobierno", "El Gobierno y las Cámaras", "El Gobierno, las Cámaras y el Poder Judicial", "El Parlamento y la Administración"], "correcta": "El Gobierno", "explicacion": "Examen 2020."},
+    {"pregunta": "¿Cuál de las siguientes NO es una de las funciones que el artículo 66 de la Constitución Española de 1978 atribuye a la Cortes Generales?", "opciones": ["Ejercer la potestad legislativa del Estado", "Aprobar los Presupuestos Generales del Estado", "Ejercer la potestad reglamentaria del Estado", "Controlar la acción del Gobierno"], "correcta": "Ejercer la potestad reglamentaria del Estado", "explicacion": "Examen 2020."},
+    {"pregunta": "Las abdicaciones y renuncias y cualquier duda de hecho o de derecho que ocurra en el orden de sucesión a la Corona se resolverán:", "opciones": ["Por una Ley de Bases", "Por una Ley Orgánica", "Por un Real Decreto Ley", "Por un Decreto Legislativo"], "correcta": "Por una Ley Orgánica", "explicacion": "Examen 2020."},
+    {"pregunta": "¿Ante qué órgano jurisdiccional será exigible la responsabilidad criminal del Presidente y demás miembros del Gobierno, según el artículo 102 de la Constitución Española de 1978?", "opciones": ["Ante el Tribunal Constitucional", "Ante la Sala de lo Penal del Tribunal Supremo", "Ante la Sala de lo Penal de los Tribunales Superiores de Justicia", "No se puede exigir responsabilidad criminal al Presidente y demás miembros del Gobierno"], "correcta": "Ante la Sala de lo Penal del Tribunal Supremo", "explicacion": "Examen 2020."},
+    {"pregunta": "¿Los Secretarios de Estado son directamente responsables de la ejecución de la acción del Gobierno?", "opciones": ["Sí, sin limitación a un sector de actividad específica", "Sí, en un sector de actividad específica de un Departamento o de la Presidencia del Gobierno", "No tienen responsabilidad directa en el desarrollo de sus funciones", "Sí, en un sector de actividad específica del Departamento siempre que la valoración económica de la acción sea inferior a 5.000.000 euros"], "correcta": "Sí, en un sector de actividad específica de un Departamento o de la Presidencia del Gobierno", "explicacion": "Examen 2020."},
+    {"pregunta": "¿Cuántas Delegaciones de Gobierno pueden instituirse en España?", "opciones": ["Una Delegación de Gobierno en cada provincia", "Una Delegación de Gobierno en cada una de las Comunidades Autónomas y Ciudades con Estatuto de Autonomía", "Una Delegación de Gobierno en cada provincia y otra en la sede territorial de cada Comunidad Autónoma", "Una Delegación de Gobierno en cada una de las Comunidades Autónomas y otra en cada isla"], "correcta": "Una Delegación de Gobierno en cada una de las Comunidades Autónomas y Ciudades con Estatuto de Autonomía", "explicacion": "Examen 2020."},
+    {"pregunta": "El Artículo 108 de la Constitución Española establece que el Gobierno responde solidariamente de su gestión política ante:", "opciones": ["El Jefe del Estado", "El Tribunal Constitucional", "El Congreso de los Diputados", "Las Cortes Generales"], "correcta": "El Congreso de los Diputados", "explicacion": "Examen 2020."},
+    {"pregunta": "Las Comisiones Delegadas del Gobierno se crean por:", "opciones": ["Acuerdo del Consejo de Ministros mediante Real Decreto, a propuesta del Presidente del Gobierno", "Ley Orgánica", "Reglamento de las Cortes Generales, a propuesta de la Presidencia del Congreso", "Ley de Bases"], "correcta": "Acuerdo del Consejo de Ministros mediante Real Decreto, a propuesta del Presidente del Gobierno", "explicacion": "Examen 2020."},
+    {"pregunta": "Según el Artículo 39.1 de la Ley 39/2015, ¿desde qué momento se presumen válidos y producen efectos los actos administrativos?", "opciones": ["Desde el momento en que son notificados al interesado", "Desde su publicación en el Boletín Oficial correspondiente, en todo caso", "Desde el día siguiente a la fecha en que se dictan", "Desde la fecha en que se dictan, salvo que en ellos se disponga otra cosa"], "correcta": "Desde la fecha en que se dictan, salvo que en ellos se disponga otra cosa", "explicacion": "Examen 2020."},
+    {"pregunta": "Los actos que resuelvan un procedimiento de responsabilidad patrimonial serán:", "opciones": ["Motivados, si lo solicita el interesado", "No motivados", "Motivados, en todo caso", "Motivados, si así lo considera el juez"], "correcta": "Motivados, en todo caso", "explicacion": "Examen 2020."},
+    {"pregunta": "Según la ley 39/2015, el medio elegido por el interesado para comunicarse con las Administraciones Públicas:", "opciones": ["Únicamente podrá ser modificado cuando, de no hacerlo, se corra riesgo de no notificar al interesado", "No podrá ser modificado con posterioridad al trámite de audiencia", "Podrá ser modificado en cualquier momento a petición del interesado", "No podrá ser modificado de manera unilateral por el interesado"], "correcta": "Podrá ser modificado en cualquier momento a petición del interesado", "explicacion": "Examen 2020."},
+    {"pregunta": "De acuerdo con la ley 40/2015, debe abstenerse de intervenir en el procedimiento el funcionario que tiene relación de servicio con el interesado en el asunto o cuando le haya prestado servicios profesionales en los:", "opciones": ["Tres últimos años", "Cinco últimos años", "Cuatro últimos años", "Dos últimos años"], "correcta": "Dos últimos años", "explicacion": "Examen 2020."},
+    {"pregunta": "Quienes, en virtud de nombramiento legal, están vinculados a una Administración Pública por una relación estatutaria regulada por el Derecho Administrativo para el desempeño de servicios profesionales retribuidos de carácter permanente, son:", "opciones": ["Funcionarios laborales", "Funcionarios de carrera", "Funcionarios de confianza", "Funcionarios interinos"], "correcta": "Funcionarios de carrera", "explicacion": "Examen 2020."},
+    {"pregunta": "Según el TREBEP, por fallecimiento, accidente o enfermedad grave de un familiar dentro del primer grado, los funcionarios tendrán un permiso de:", "opciones": ["Tres días hábiles cuando el suceso se produzca en la misma localidad, y cinco días hábiles cuando sea en distinta localidad", "Dos días hábiles cuando el suceso se produzca en la misma localidad, y cuatro días hábiles cuando sea en distinta localidad", "Tres días hábiles en misma provincia, cinco en distinta", "Dos días hábiles en misma provincia, cuatro en distinta"], "correcta": "Tres días hábiles cuando el suceso se produzca en la misma localidad, y cinco días hábiles cuando sea en distinta localidad", "explicacion": "Examen 2020."},
+    {"pregunta": "Según el artículo 75 del TREBEP, un cuerpo de funcionarios se crea:", "opciones": ["Por Orden del Ministerio", "Por Orden del Ministerio de Política Territorial", "Por Ley de las Cortes Generales o de las asambleas legislativas de las CCAA", "Por Real Decreto del Gobierno"], "correcta": "Por Ley de las Cortes Generales o de las asambleas legislativas de las Comunidades Autónomas", "explicacion": "Examen 2020."},
+    {"pregunta": "El personal eventual:", "opciones": ["Tiene derecho al reconocimiento de los servicios prestados como mérito", "Es empleado público clasificado como interino tras 5 años", "Es empleado público que sólo realiza funciones expresamente calificadas como de confianza o asesoramiento especial", "Es personal directivo"], "correcta": "Es empleado público que sólo realiza funciones expresamente calificadas como de confianza o asesoramiento especial", "explicacion": "Examen 2020."},
+    {"pregunta": "En el sueldo de los empleados públicos, los trienios:", "opciones": ["Son parte de las retribuciones complementarias", "Son parte de las retribuciones complementarias de los funcionarios", "Se empiezan a percibir a los 5 años", "Son parte de las retribuciones básicas de los funcionarios"], "correcta": "Son parte de las retribuciones básicas de los funcionarios", "explicacion": "Examen 2020."},
+    {"pregunta": "Según el artículo 10 de la Ley 19/2013, la AGE desarrollará:", "opciones": ["Un Organismo Autónomo de la Transparencia", "Un Portal de la Transparencia", "Una ventanilla única", "Estatutos del Consejo"], "correcta": "Un Portal de la Transparencia", "explicacion": "Examen 2020."},
+    {"pregunta": "¿Cuál de los siguientes es un principio del protocolo de actuación para la prevención del acoso sexual?", "opciones": ["Iniciar expediente disciplinario en 3 días", "La comunicación al Instituto de la Mujer", "La comunicación al Ministerio de Igualdad", "El tratamiento reservado de las denuncias"], "correcta": "El tratamiento reservado de las denuncias", "explicacion": "Examen 2020."},
+    {"pregunta": "¿A qué órgano corresponde el asesoramiento y evaluación en materia de violencia de género (Ley 1/2004)?", "opciones": ["Al Observatorio Estatal de Violencia sobre la Mujer", "A la Comisión Delegada", "Al Instituto de la Mujer", "A la Comisión Interministerial"], "correcta": "Al Observatorio Estatal de Violencia sobre la Mujer", "explicacion": "Examen 2020."},
+    {"pregunta": "El cupo de reserva para personas con discapacidad en ofertas de empleo público es no inferior al:", "opciones": ["7%", "3%", "6%", "5%"], "correcta": "7%", "explicacion": "Examen 2020."},
+    {"pregunta": "La Ley 19/2013 establece que el acceso a la información pública se realizará:", "opciones": ["Preferentemente por vía electrónica, salvo cuando no sea posible o el solicitante haya señalado otro medio", "Exclusivamente por vía electrónica", "Siempre por vía electrónica y correo ordinario", "Por vía electrónica en plazo de 5 días"], "correcta": "Preferentemente por vía electrónica, salvo cuando no sea posible o el solicitante haya señalado otro medio", "explicacion": "Examen 2020."},
+    {"pregunta": "Todo trato desfavorable a las mujeres relacionado con el embarazo o maternidad constituye discriminación por razón de sexo:", "opciones": ["Indirecta", "Directa", "Directa si hay violencia", "Según decisión judicial"], "correcta": "Directa", "explicacion": "Examen 2020."},
+
+
+    {"pregunta": "Según el artículo 1 de la Constitución Española de 1978, la forma política del Estado español es:", "opciones": ["La Monarquía parlamentaria", "La Monarquía constitucional", "La Monarquía democrática", "La Democracia parlamentaria"], "correcta": "La Monarquía parlamentaria", "explicacion": "Examen 2021."},
+    {"pregunta": "Según el artículo 25 de la Constitución Española de 1978:", "opciones": ["Nadie puede ser condenado o sancionado por acciones u omisiones si el Congreso, antes de que recaiga sentencia o resolución firme...", "Nadie puede ser condenado... sin dar audiencia al Defensor del Pueblo...", "Nadie puede ser condenado o sancionado por acciones u omisiones que en el momento de producirse no constituyan delito, falta o infracción administrativa, según la legislación vigente en aquel momento", "Nadie puede ser condenado... si hay conflicto de atribución..."], "correcta": "Nadie puede ser condenado o sancionado por acciones u omisiones que en el momento de producirse no constituyan delito, falta o infracción administrativa, según la legislación vigente en aquel momento", "explicacion": "Examen 2021."},
+    {"pregunta": "Según el artículo 113 de la Constitución Española de 1978, ¿qué órgano puede exigir la responsabilidad política del Gobierno?", "opciones": ["El Congreso de los Diputados, por mayoría absoluta, a iniciativa del Tribunal Supremo", "El Congreso de los Diputados mediante la adopción por mayoría absoluta de la moción de censura", "Las Cortes Generales mediante la adopción por mayoría absoluta de cada Cámara...", "Las Cortes generales..."], "correcta": "El Congreso de los Diputados mediante la adopción por mayoría absoluta de la moción de censura", "explicacion": "Examen 2021."},
+    {"pregunta": "Según el artículo 86 de la Constitución, el Gobierno podrá dictar Decretos-Leyes:", "opciones": ["En caso de la declaración de los estados de alarma, excepción o sitio", "En caso de declaración del estado de catástrofe", "En caso de extraordinaria y urgente necesidad", "En caso de extraordinaria y urgente necesidad si en ese momento se hayan disueltas las Cortes..."], "correcta": "En caso de extraordinaria y urgente necesidad", "explicacion": "Examen 2021."},
+    {"pregunta": "Según el artículo 88 de la Constitución, los proyectos de ley serán sometidos al Congreso:", "opciones": ["Por el Consejo de Ministros", "A iniciativa popular...", "Por los grupos políticos...", "Por las Asambleas de las CCAA..."], "correcta": "Por el Consejo de Ministros", "explicacion": "Examen 2021."},
+    {"pregunta": "Según el artículo 7 de la Ley 50/1997, los Secretarios de Estado actúan bajo la dirección:", "opciones": ["Del Subsecretario del Departamento...", "Del Secretario General del Departamento...", "Del titular del Departamento al que pertenezcan", "Directa del Jefe del Estado"], "correcta": "Del titular del Departamento al que pertenezcan", "explicacion": "Examen 2021."},
+    {"pregunta": "Según el artículo 24 de la Ley 50/1997, las disposiciones y resoluciones de los Ministros revestirán la forma de:", "opciones": ["Decretos", "Órdenes Ministeriales", "Decretos Ministeriales", "Ordenanzas Ministeriales"], "correcta": "Órdenes Ministeriales", "explicacion": "Examen 2021."},
+    {"pregunta": "Según el artículo 69 de la Ley 40/2015, las Delegaciones del Gobierno están adscritas orgánicamente:", "opciones": ["A la Comisión Delegada...", "Al Ministerio de Hacienda y Función Pública", "Al Consejo de Ministros", "Al Ministerio de la Presidencia"], "correcta": "Al Ministerio de Hacienda y Función Pública", "explicacion": "Examen 2021."},
+    {"pregunta": "Según el artículo 75 de la Ley 40/2015, cuál de las siguientes competencias corresponde a los Subdelegados del Gobierno:", "opciones": ["Ostentar la representación ordinaria del Estado...", "Asegurar el correcto funcionamiento de la Diputación...", "Fiscalizar los presupuestos...", "Dirigir las Fuerzas y Cuerpos de Seguridad del Estado en la provincia"], "correcta": "Dirigir las Fuerzas y Cuerpos de Seguridad del Estado en la provincia", "explicacion": "Examen 2021."},
+    {"pregunta": "Según la Ley 40/2015, los titulares de los órganos directivos encargados de la gestión de una o varias áreas funcionalmente homogéneas del Ministerio, son:", "opciones": ["Los Subsecretarios", "Los Subdirectores Generales", "Los Secretarios Generales", "Los Directores Generales"], "correcta": "Los Directores Generales", "explicacion": "Examen 2021."},
+    {"pregunta": "Según el artículo 50 del TREBEP, los funcionarios tendrán vacaciones retribuidas de:", "opciones": ["Veintidós días hábiles, o los proporcionales...", "Veinticuatro días hábiles", "Veintiséis días hábiles", "Veinte días hábiles"], "correcta": "Veintidós días hábiles, o de los días que correspondan proporcionalmente si el tiempo de servicio durante el año fue menor", "explicacion": "Examen 2021."},
+    {"pregunta": "Según el artículo 8 del TREBEP, NO es una clasificación de los empleados públicos:", "opciones": ["Funcionarios de carrera", "Funcionarios interinos", "Personal directivo", "Personal eventual"], "correcta": "Personal directivo", "explicacion": "Examen 2021. (Directivo Profesional es categoría aparte, no básica del Art 8)."},
+    {"pregunta": "Según el artículo 10 del TREBEP, son funcionarios de carrera:", "opciones": ["Quienes, en virtud de nombramiento legal, están vinculados a una Administración Pública por una relación estatutaria regulada por el Derecho Administrativo para el desempeño de servicios profesionales retribuidos de carácter permanente", "Los que, en virtud de contrato...", "Los que, por razones justificadas de necesidad...", "Los que, en virtud de nombramiento no permanente..."], "correcta": "Quienes, en virtud de nombramiento legal, están vinculados a una Administración Pública por una relación estatutaria regulada por el Derecho Administrativo para el desempeño de servicios profesionales retribuidos de carácter permanente", "explicacion": "Examen 2021."},
+    {"pregunta": "Según el artículo 47 bis del TREBEP, señale la respuesta INCORRECTA respecto al teletrabajo:", "opciones": ["Tendrá carácter obligatorio e irreversible, salvo en supuestos excepcionales debidamente justificados", "Será expresamente autorizado y compatible...", "La Administración proporcionará medios...", "Deberá contribuir a una mejor organización..."], "correcta": "Tendrá carácter obligatorio e irreversible, salvo en supuestos excepcionales debidamente justificados", "explicacion": "Examen 2021."},
+    {"pregunta": "Según el TREBEP, NO es causa de pérdida de la condición de funcionario de carrera:", "opciones": ["La sanción disciplinaria por falta grave", "La renuncia", "La pérdida de la nacionalidad", "La jubilación total"], "correcta": "La sanción disciplinaria por falta grave", "explicacion": "Examen 2021."},
+    {"pregunta": "Señale cuál de los siguientes NO constituye un deber de los empleados públicos (Art 54 TREBEP):", "opciones": ["Garantizarán la atención al ciudadano en la lengua que lo solicite...", "Mantendrán actualizada su formación...", "Obedecerán las instrucciones y órdenes profesionales de los superiores, aunque constituyan una infracción manifiesta del ordenamiento jurídico", "Administrarán los recursos con austeridad"], "correcta": "Obedecerán las instrucciones y órdenes profesionales de los superiores, aunque constituyan una infracción manifiesta del ordenamiento jurídico", "explicacion": "Examen 2021."},
+    {"pregunta": "Según la Ley 39/2015, son nulos de pleno derecho los actos:", "opciones": ["Que limiten derechos subjetivos...", "Que incurran en infracción del ordenamiento...", "Que sean dictados fuera del tiempo...", "Que sean constitutivos de infracción penal o se dicten como consecuencia de ésta"], "correcta": "Que sean constitutivos de infracción penal o se dicten como consecuencia de ésta", "explicacion": "Examen 2021."},
+    {"pregunta": "Según la Ley 39/2015, los procedimientos se iniciarán de oficio por acuerdo del órgano competente:", "opciones": ["A solicitud del interesado", "A petición razonada de otros órganos", "A través de declaración responsable", "Como consecuencia de orden inferior"], "correcta": "A petición razonada de otros órganos", "explicacion": "Examen 2021."},
+    {"pregunta": "Según la Ley 39/2015, respecto al trámite de audiencia:", "opciones": ["Solo urgencia", "Todo el procedimiento", "Plazo no superior a diez días", "Los interesados, en un plazo no inferior a diez días ni superior a quince, podrán alegar y presentar los documentos y justificaciones que estimen pertinentes"], "correcta": "Los interesados, en un plazo no inferior a diez días ni superior a quince, podrán alegar y presentar los documentos y justificaciones que estimen pertinentes", "explicacion": "Examen 2021."},
+    {"pregunta": "Según la Ley 39/2015, el plazo para la interposición del recurso de alzada será de:", "opciones": ["Cuatro años...", "Tres meses...", "Un mes, si el acto fuera expreso", "Cuatro meses..."], "correcta": "Un mes, si el acto fuera expreso", "explicacion": "Examen 2021."},
+    {"pregunta": "¿Cuál es el principal mecanismo de la AGE para la participación de la sociedad civil en el Gobierno Abierto?", "opciones": ["Asamblea General...", "Consejo Ciudadano...", "Grupo de Trabajo...", "Foro de Gobierno Abierto"], "correcta": "Foro de Gobierno Abierto", "explicacion": "Examen 2021."},
+    {"pregunta": "¿Cómo se llama el portal de la Administración General del Estado para el Gobierno Abierto?", "opciones": ["Portal del Gobierno Abierto", "Portal de la Igualdad...", "Portal de la Transparencia", "Portal de la Participación..."], "correcta": "Portal de la Transparencia", "explicacion": "Examen 2021."},
+    {"pregunta": "¿Cuál NO es uno de los ejes de actuación del III Plan para la igualdad de género en la AGE?", "opciones": ["Ayudas a la movilidad y a la vivienda", "Violencia contra las mujeres", "Condiciones de trabajo...", "Corresponsabilidad..."], "correcta": "Ayudas a la movilidad y a la vivienda", "explicacion": "Examen 2021."},
+    {"pregunta": "¿Cuál es la principal norma que recoge los derechos de las personas con discapacidad?", "opciones": ["Ley 40/2007", "Ley Orgánica 1/2004", "Ley 10/1984", "Real Decreto Legislativo 1/2013, de 29 de noviembre, por el que se aprueba el Texto Refundido de la Ley General de derechos de las personas con discapacidad y de su inclusión social"], "correcta": "Real Decreto Legislativo 1/2013, de 29 de noviembre, por el que se aprueba el Texto Refundido de la Ley General de derechos de las personas con discapacidad y de su inclusión social", "explicacion": "Examen 2021."},
+    {"pregunta": "La Ley 39/2006 regula las condiciones básicas de promoción de la autonomía personal mediante la creación del:", "opciones": ["Foro nacional...", "Consejo Nacional...", "Sistema para la Autonomía y Atención a la Dependencia", "Defensor..."], "correcta": "Sistema para la Autonomía y Atención a la Dependencia", "explicacion": "Examen 2021."},
+
+
+    {"pregunta": "¿Dónde reside la soberanía nacional según el artículo 1 de la Constitución?", "opciones": ["En el Gobierno...", "En las Cortes...", "En el Rey...", "En el pueblo español, del que emanan los poderes del Estado"], "correcta": "En el pueblo español, del que emanan los poderes del Estado", "explicacion": "Examen 2022."},
+    {"pregunta": "¿Qué dispone el artículo 3 de la Constitución respecto a las modalidades lingüísticas?", "opciones": ["Que es un patrimonio cultural que será objeto de especial respeto y protección", "Promoverse como patrimonio humanidad", "Esencial del patrimonio nacional", "Protegido por CCAA"], "correcta": "Que es un patrimonio cultural que será objeto de especial respeto y protección", "explicacion": "Examen 2022."},
+    {"pregunta": "¿La tutela de qué derecho puede ser recabada a través del recurso de amparo?", "opciones": ["El derecho de asociación", "Vivienda digna", "Trabajo", "Propiedad privada"], "correcta": "El derecho de asociación", "explicacion": "Examen 2022."},
+    {"pregunta": "¿Cuál de las siguientes funciones corresponde al Rey?", "opciones": ["Autorizar guerra", "Refrendar al Presidente", "Derecho de gracia cuando quiera", "Nombrar y separar a los miembros del Gobierno, a propuesta de su Presidente"], "correcta": "Nombrar y separar a los miembros del Gobierno, a propuesta de su Presidente", "explicacion": "Examen 2022."},
+    {"pregunta": "¿Qué exigirá la aprobación, modificación o derogación de las leyes orgánicas?", "opciones": ["Mayoría absoluta del Congreso, en una votación final sobre el conjunto del proyecto", "Absoluta Senado", "Referéndum", "Referéndum excepto tratados"], "correcta": "Mayoría absoluta del Congreso, en una votación final sobre el conjunto del proyecto", "explicacion": "Examen 2022."},
+    {"pregunta": "¿A quién corresponde la presidencia de la Comisión General de Secretarios de Estado y Subsecretarios?", "opciones": ["Presidente", "Ministro Presidencia", "Secretario Estado", "A un Vicepresidente del Gobierno o, en su defecto, al Ministro de la Presidencia"], "correcta": "A un Vicepresidente del Gobierno o, en su defecto, al Ministro de la Presidencia", "explicacion": "Examen 2022."},
+    {"pregunta": "¿Cómo se establecen el número, la denominación y el ámbito de competencia de los Ministerios?", "opciones": ["Constitución", "RD Consejo Ministros", "Ley", "Mediante Real Decreto del Presidente del Gobierno"], "correcta": "Mediante Real Decreto del Presidente del Gobierno", "explicacion": "Examen 2022."},
+    {"pregunta": "¿Quién representa al Gobierno de la Nación en el territorio de cada Comunidad Autónoma?", "opciones": ["Los Delegados del Gobierno", "Ministro", "Secretarios", "Gobernadores"], "correcta": "Los Delegados del Gobierno", "explicacion": "Examen 2022."},
+    {"pregunta": "¿Quiénes son los órganos superiores de la Administración General del Estado?", "opciones": ["Ministros, Secretarios Estado, Subsecretarios", "Ministros y Embajadores", "Ministros, Secretarios, Embajadores", "Los Ministros y los Secretarios de Estado"], "correcta": "Los Ministros y los Secretarios de Estado", "explicacion": "Examen 2022."},
+    {"pregunta": "¿Quiénes pueden ser nombrados Subsecretarios?", "opciones": ["Funcionarios Grupo A", "Funcionarios y Jueces", "Los funcionarios de carrera del Estado, Comunidades Autónomas o Entidades Locales del Subgrupo A1", "Cualquier persona cualificada"], "correcta": "Los funcionarios de carrera del Estado, Comunidades Autónomas o Entidades Locales del Subgrupo A1", "explicacion": "Examen 2022."},
+    {"pregunta": "¿Cuándo podrá ser limitado el derecho de acceso a la información pública?", "opciones": ["Elecciones", "Libertad sindical", "Libre competencia", "Cuando acceder a la información suponga un perjuicio para la seguridad nacional"], "correcta": "Cuando acceder a la información suponga un perjuicio para la seguridad nacional", "explicacion": "Examen 2022."},
+    {"pregunta": "Según la Ley 19/2013, ¿qué organismo tiene por finalidad promover la transparencia?", "opciones": ["Ministerio Hacienda", "El Consejo de Transparencia y Buen Gobierno", "Consejo Gobierno Abierto", "Foro Gobierno Abierto"], "correcta": "El Consejo de Transparencia y Buen Gobierno", "explicacion": "Examen 2022."},
+    {"pregunta": "Según la ley 39/2015, formas de iniciación del procedimiento:", "opciones": ["Los procedimientos podrán iniciarse de oficio o a solicitud del interesado", "Solo oficio", "Solo orden superior", "Solo solicitud"], "correcta": "Los procedimientos podrán iniciarse de oficio o a solicitud del interesado", "explicacion": "Examen 2022."},
+    {"pregunta": "Según la ley 39/2015, notificaciones en domicilio, si no está el interesado:", "opciones": ["Podrá hacerse cargo de la misma cualquier persona mayor de 14 años que se encuentre en el domicilio y haga constar su identidad", "Familiar", "Rechazada", "No se puede"], "correcta": "Podrá hacerse cargo de la misma cualquier persona mayor de 14 años que se encuentre en el domicilio y haga constar su identidad", "explicacion": "Examen 2022."},
+    {"pregunta": "En la AGE, ¿quién es competente para resolver procedimientos de responsabilidad patrimonial?", "opciones": ["Funcionario registro", "El Ministro respectivo o el Consejo de Ministros", "Secretaría Estado Seguridad", "Delegación Gobierno"], "correcta": "El Ministro respectivo o el Consejo de Ministros", "explicacion": "Examen 2022."},
+    {"pregunta": "Según la ley 39/2015, ¿quiénes están obligados a relacionarse electrónicamente?", "opciones": ["Las personas jurídicas", "Personas físicas", "Todos", "Representantes no obligados"], "correcta": "Las personas jurídicas", "explicacion": "Examen 2022."},
+    {"pregunta": "Causa de inadmisión de recurso administrativo (Art 116 Ley 39/2015):", "opciones": ["Audiencia ya dada", "Multa coercitiva", "Carecer de legitimación el recurrente", "Urgencia"], "correcta": "Carecer de legitimación el recurrente", "explicacion": "Examen 2022."},
+    {"pregunta": "Según el TREBEP, los funcionarios interinos:", "opciones": ["Nombrados permanente", "Son nombrados con carácter temporal por razones expresamente justificadas de necesidad y urgencia", "Fijos", "Confianza"], "correcta": "Son nombrados con carácter temporal por razones expresamente justificadas de necesidad y urgencia", "explicacion": "Examen 2022."},
+    {"pregunta": "Permiso por adopción de un menor (Art 48 TREBEP):", "opciones": ["Tres días", "Dos días", "Dos semanas", "Dieciséis semanas por adopción de un menor"], "correcta": "Dieciséis semanas por adopción de un menor", "explicacion": "Examen 2022."},
+    {"pregunta": "Derecho de los empleados públicos (Art 14 TREBEP):", "opciones": ["Dedicación", "Obtener cualquier puesto", "La inamovilidad en la condición de funcionario de carrera", "Libre asociación judicial"], "correcta": "La inamovilidad en la condición de funcionario de carrera", "explicacion": "Examen 2022."},
+    {"pregunta": "Grados de dependencia (Ley 39/2006):", "opciones": ["Se clasificarán en 3 grados: Grado I. Dependencia moderada, Grado II. Dependencia severa y Grado III. Gran dependencia", "Grados físicos...", "Según discapacidad", "Catálogo anual"], "correcta": "Se clasificarán en 3 grados: Grado I. Dependencia moderada, Grado II. Dependencia severa y Grado III. Gran dependencia", "explicacion": "Examen 2022."},
+    {"pregunta": "Causa de pérdida de condición de funcionario (Art 63 TREBEP):", "opciones": ["La jubilación total del funcionario", "Servicio otra administración", "Servicios especiales", "Excedencia forzosa"], "correcta": "La jubilación total del funcionario", "explicacion": "Examen 2022."},
+    {"pregunta": "Requisito para proceso selectivo (Art 56 TREBEP):", "opciones": ["Mayoría edad legal", "Tener cumplidos dieciséis años y no exceder, en su caso, de la edad máxima de jubilación forzosa", "14 años", "Menor de 65"], "correcta": "Tener cumplidos dieciséis años y no exceder, en su caso, de la edad máxima de jubilación forzosa", "explicacion": "Examen 2022."},
+    {"pregunta": "Excedencia por violencia de género:", "opciones": ["La funcionaria tendrá derecho a solicitar la situación de excedencia sin tener que haber prestado un tiempo mínimo de servicios previos y sin que sea exigible plazo de permanencia en la misma", "Subordinada necesidades", "Hijos menores", "Provisional"], "correcta": "La funcionaria tendrá derecho a solicitar la situación de excedencia sin tener que haber prestado un tiempo mínimo de servicios previos y sin que sea exigible plazo de permanencia en la misma", "explicacion": "Examen 2022."},
+    {"pregunta": "Composición equilibrada (Ley 3/2007):", "opciones": ["Paritaria", "Que en el conjunto a que se refiera, las personas de cada sexo no superen el sesenta por ciento ni sean menos del cuarenta por ciento", "30%", "Hombres no superen mujeres"], "correcta": "Que en el conjunto a que se refiera, las personas de cada sexo no superen el sesenta por ciento ni sean menos del cuarenta por ciento", "explicacion": "Examen 2022."},
+
+
+    {"pregunta": "Según el artículo 9 de la Constitución Española de 1978:", "opciones": ["Poderes y Constitución sujetos...", "Poderes y ordenamiento sujetos...", "Ciudadanos y poderes sujetos...", "La Constitución y el resto del ordenamiento jurídico están sujetos a los ciudadanos y los poderes públicos"], "correcta": "Los ciudadanos y los poderes públicos están sujetos a la Constitución y al resto del ordenamiento jurídico", "explicacion": "Examen 2024. (Opción C en original)."},
+    {"pregunta": "Según el artículo 53 de la Constitución, ante que órgano cabe el recurso de amparo:", "opciones": ["Fiscal", "El Tribunal Constitucional", "CGPJ", "Supremo"], "correcta": "El Tribunal Constitucional", "explicacion": "Examen 2024."},
+    {"pregunta": "¿Qué órgano aprueba los presupuestos del Estado?", "opciones": ["Las Cortes Generales", "Comisión Económica", "Gobierno", "Tribunal Cuentas"], "correcta": "Las Cortes Generales", "explicacion": "Examen 2024."},
+    {"pregunta": "El Tribunal Supremo es el órgano jurisdiccional superior en todos los órdenes, salvo:", "opciones": ["Terrorismo", "Guerra", "Derecho civil foral", "Lo dispuesto en materia de garantías Constitucionales"], "correcta": "Lo dispuesto en materia de garantías Constitucionales", "explicacion": "Examen 2024."},
+    {"pregunta": "El órgano que ejercerá la potestad legislativa del Estado es:", "opciones": ["Las Cortes Generales", "Gobierno", "Congreso", "Poder Judicial"], "correcta": "Las Cortes Generales", "explicacion": "Examen 2024."},
+    {"pregunta": "Son órganos superiores de la AGE (Ley 50/1997):", "opciones": ["Ministros", "Secretarios Generales Técnicos", "Subsecretarios", "Los Secretarios de Estado"], "correcta": "Los Secretarios de Estado", "explicacion": "Examen 2024. (Junto a los Ministros, son los Superiores. Los otros son Directivos)."},
+    {"pregunta": "Jefatura superior de personal de un Departamento (Ley 40/2015):", "opciones": ["Secretario Estado", "Director General", "El Subsecretario", "Ministro"], "correcta": "El Subsecretario", "explicacion": "Examen 2024."},
+    {"pregunta": "Estatuto funcionarios públicos (Art 103 CE):", "opciones": ["Inamovilidad", "Aprobado Gobierno", "Modernización", "Será regulado por Ley"], "correcta": "Será regulado por Ley", "explicacion": "Examen 2024."},
+    {"pregunta": "Direcciones Generales (Ley 40/2015):", "opciones": ["Exclusiva A1", "Bajo Subsecretario normativa...", "Servicios comunes", "Los órganos de gestión de una o varias áreas funcionalmente homogéneas"], "correcta": "Los órganos de gestión de una o varias áreas funcionalmente homogéneas", "explicacion": "Examen 2024."},
+    {"pregunta": "Nulidad pleno derecho (Ley 39/2015):", "opciones": ["Elementos otro", "Defecto forma", "Compulsión", "El acto dictado por órgano manifiestamente incompetente por razón del territorio"], "correcta": "El acto dictado por órgano manifiestamente incompetente por razón del territorio", "explicacion": "Examen 2024."},
+    {"pregunta": "Recurso contra acto que pone fin a vía administrativa:", "opciones": ["Extraordinario alzada", "Ninguno", "El recurso potestativo de reposición", "Alzada"], "correcta": "El recurso potestativo de reposición", "explicacion": "Examen 2024."},
+    {"pregunta": "Plazo en día inhábil (Ley 39/2015):", "opciones": ["Finaliza mismo día naturales", "Mismo día hábiles", "Siguiente día", "Se entenderá prorrogado al primer día hábil siguiente"], "correcta": "Se entenderá prorrogado al primer día hábil siguiente", "explicacion": "Examen 2024."},
+    {"pregunta": "Notificaciones electrónicas rechazadas tras:", "opciones": ["Diez días naturales desde la puesta a disposición de la notificación sin que se acceda a su contenido", "Quince naturales", "Diez hábiles", "Quince hábiles"], "correcta": "Diez días naturales desde la puesta a disposición de la notificación sin que se acceda a su contenido", "explicacion": "Examen 2024."},
+    {"pregunta": "Prescripción derecho reclamar responsabilidad patrimonial:", "opciones": ["Al año de producido el hecho o acto que motiva la indemnización", "6 meses", "9 meses", "Sin plazo físicos"], "correcta": "Al año de producido el hecho o acto que motiva la indemnización", "explicacion": "Examen 2024."},
+    {"pregunta": "Plazo resolución responsabilidad patrimonial:", "opciones": ["3 meses", "Seis meses", "9 meses", "1 año"], "correcta": "Seis meses", "explicacion": "Examen 2024."},
+    {"pregunta": "Personal nombrado por urgencia para vacantes (TREBEP):", "opciones": ["Carrera", "Funcionarios interinos", "Eventual", "Laboral temporal"], "correcta": "Funcionarios interinos", "explicacion": "Examen 2024."},
+    {"pregunta": "Retribuciones básicas (Art 23 TREBEP):", "opciones": ["Sueldo y específico", "Sueldo y trienios", "Sueldo, trienios, pagas", "Sueldo y destino"], "correcta": "Sueldo y trienios", "explicacion": "Examen 2024."},
+    {"pregunta": "Cupo discapacidad oferta empleo:", "opciones": ["No existe", "No inferior al 7% de las vacantes", "2%", "No inferior 2%"], "correcta": "No inferior al 7% de las vacantes", "explicacion": "Examen 2024."},
+    {"pregunta": "Excedencia voluntaria interés particular, requisitos:", "opciones": ["2 años", "3 años", "4 años", "5 años inmediatamente anteriores"], "correcta": "5 años inmediatamente anteriores", "explicacion": "Examen 2024."},
+    {"pregunta": "Prescripción infracciones leves:", "opciones": ["3 meses", "Los seis meses", "1 año", "2 años"], "correcta": "Los seis meses", "explicacion": "Examen 2024."},
+    {"pregunta": "Resolución acceso información (Ley 19/2013):", "opciones": ["Un mes desde la recepción de la solicitud por el órgano competente para resolver, pudiendo ampliarse el plazo por otro mes...", "15 días", "2 meses", "1 mes sin ampliación"], "correcta": "Un mes desde la recepción de la solicitud por el órgano competente para resolver, pudiendo ampliarse el plazo por otro mes...", "explicacion": "Examen 2024."},
+    {"pregunta": "Criterio actuación Poderes Públicos (Ley 3/2007):", "opciones": ["La participación equilibrada de mujeres y hombres en las candidaturas electorales y en la toma de decisiones", "Compromiso", "Coordinación", "Adopción medidas"], "correcta": "La participación equilibrada de mujeres y hombres en las candidaturas electorales y en la toma de decisiones", "explicacion": "Examen 2024."},
+    {"pregunta": "Empresas obligadas a plan igualdad:", "opciones": ["50", "100", "150", "200"], "correcta": "50", "explicacion": "Examen 2024."},
+    {"pregunta": "Bonificación contratos interinidad violencia género:", "opciones": ["25%", "50%", "75%", "100% de las cuotas empresariales a la Seguridad Social por contingencias comunes"], "correcta": "100% de las cuotas empresariales a la Seguridad Social por contingencias comunes", "explicacion": "Examen 2024."},
+    {"pregunta": "Cuota reserva discapacidad empresas privadas > 50 trabajadores:", "opciones": ["2% de puestos de trabajo para personas con discapacidad", "3%", "5%", "7%"], "correcta": "2% de puestos de trabajo para personas con discapacidad", "explicacion": "Examen 2024."},
+
+
+    {"pregunta": "Señale la opción correcta de acuerdo con el artículo 9.3 de la Constitución Española de 1978:", "opciones": ["La Constitución garantiza el principio de igualdad...", "La Constitución garantiza el principio de libertad...", "La Constitución garantiza el principio de legalidad, la jerarquía normativa, la publicidad de las normas, la irretroactividad de las disposiciones sancionadoras no favorables...", "La Constitución garantiza el principio de justicia..."], "correcta": "La Constitución garantiza el principio de legalidad, la jerarquía normativa, la publicidad de las normas, la irretroactividad de las disposiciones sancionadoras no favorables...", "explicacion": "Examen 2025. Art 9.3 CE."},
+    {"pregunta": "Según señala el artículo 167 de la Constitución... Si no hubiera acuerdo entre ambas Cámaras para la reforma, se intentará obtenerlo mediante una Comisión formada por:", "opciones": ["Únicamente Diputados...", "Únicamente Senadores...", "Diputados y Senadores, que presentará un texto que será votado por el Congreso exclusivamente", "Diputados y Senadores, que presentará un texto que será votado por el Congreso y el Senado"], "correcta": "Diputados y Senadores, que presentará un texto que será votado por el Congreso y el Senado", "explicacion": "Examen 2025."},
+    {"pregunta": "¿Quién puede solicitar la reunión de las Cámaras en sesión extraordinaria (Art 73 CE)?", "opciones": ["El Consejo de Ministros", "La mayoría simple del Congreso", "La Diputación Permanente", "La Comisión Mixta"], "correcta": "La Diputación Permanente", "explicacion": "Examen 2025."},
+    {"pregunta": "De conformidad con el artículo 17 de la Constitución Española (Detención):", "opciones": ["24 horas", "36 horas", "48 horas", "En el plazo máximo de 72 horas, el detenido deberá ser puesto en libertad o a disposición de la autoridad judicial"], "correcta": "En el plazo máximo de 72 horas, el detenido deberá ser puesto en libertad o a disposición de la autoridad judicial", "explicacion": "Examen 2025."},
+    {"pregunta": "El Consejo General del Poder Judicial estará integrado por:", "opciones": ["El Presidente del TS y 12 miembros", "El Presidente del Tribunal Supremo, que lo presidirá, y por veinte miembros nombrados por el Rey", "12 miembros incluido el Presidente", "20 miembros incluido el Presidente"], "correcta": "El Presidente del Tribunal Supremo, que lo presidirá, y por veinte miembros nombrados por el Rey", "explicacion": "Examen 2025."},
+    {"pregunta": "Según Ley 40/2015, los Delegados del Gobierno tienen rango de:", "opciones": ["Subsecretario", "Director General", "Secretario General", "Subdirector General"], "correcta": "Subsecretario", "explicacion": "Examen 2025."},
+    {"pregunta": "Según Ley 50/1997, las disposiciones y resoluciones de los Ministros revisten forma de:", "opciones": ["Acuerdo", "Disposición", "Orden Ministerial", "Decreto"], "correcta": "Orden Ministerial", "explicacion": "Examen 2025."},
+    {"pregunta": "¿Quién controla la potestad reglamentaria (Art 106 CE)?", "opciones": ["Los Tribunales", "El Consejo de Estado", "Las Cortes", "El Gobierno"], "correcta": "Los Tribunales", "explicacion": "Examen 2025."},
+    {"pregunta": "¿Ante quién responde solidariamente el Gobierno en su gestión política?", "opciones": ["Senado", "Ante el Congreso de los Diputados", "Comisiones", "Tribunales"], "correcta": "Ante el Congreso de los Diputados", "explicacion": "Examen 2025."},
+    {"pregunta": "Según Ley 40/2015, son órganos superiores:", "opciones": ["Ministros, Secretarios de Estado y Subsecretarios", "Ministros y Subsecretarios", "Los Ministros y Secretarios de Estado", "Ministros y Secretarios generales"], "correcta": "Los Ministros y Secretarios de Estado", "explicacion": "Examen 2025."},
+    {"pregunta": "Ley 39/2015, presunción de validez de los actos:", "opciones": ["La fecha en que se dicten salvo que en ellos se disponga otra cosa", "Siempre fecha dictado", "Publicación", "20 días"], "correcta": "La fecha en que se dicten salvo que en ellos se disponga otra cosa", "explicacion": "Examen 2025."},
+    {"pregunta": "Responsabilidad patrimonial, dictamen Consejo de Estado preceptivo si cuantía:", "opciones": ["Superior a 30 000 €", "Igual o superior a 40 000 €", "Igual o superior a 50 000 €", "Superior a 40 000 €"], "correcta": "Igual o superior a 50 000 €", "explicacion": "Examen 2025."},
+    {"pregunta": "Trámite de audiencia (Ley 39/2015), plazo:", "opciones": ["10 días", "No inferior a diez días ni superior a quince", "15-30", "15"], "correcta": "No inferior a diez días ni superior a quince", "explicacion": "Examen 2025."},
+    {"pregunta": "Señale la respuesta INCORRECTA. Ponen fin a la vía administrativa:", "opciones": ["Ministros/Secretarios Estado", "Resolución alzada", "Los actos emanados de los órganos directivos con nivel de Subdirector general o superior", "Resolución responsabilidad patrimonial"], "correcta": "Los actos emanados de los órganos directivos con nivel de Subdirector general o superior", "explicacion": "Examen 2025."},
+    {"pregunta": "Prescripción responsabilidad patrimonial daños físicos/psíquicos:", "opciones": ["1 año hecho", "Al año desde la curación o la determinación del alcance de las secuelas", "6 meses hecho", "6 meses curación"], "correcta": "Al año desde la curación o la determinación del alcance de las secuelas", "explicacion": "Examen 2025."},
+    {"pregunta": "TREBEP Art 14, NO es derecho individual:", "opciones": ["A la movilidad en la condición de funcionario de carrera", "Retribuciones", "Intimidad digital", "Asociación"], "correcta": "A la movilidad en la condición de funcionario de carrera", "explicacion": "Examen 2025. (Es INAMOVILIDAD)."},
+    {"pregunta": "Permiso nacimiento madre biológica discapacidad hijo:", "opciones": ["Dos semanas para cada progenitor", "De una semana cada uno de los progenitores", "A decisión", "No existe"], "correcta": "De una semana cada uno de los progenitores", "explicacion": "Examen 2025."},
+    {"pregunta": "Delegados de Personal en unidad de 10 funcionarios:", "opciones": ["Un Delegado de Personal", "Dos", "Tres", "Cinco"], "correcta": "Un Delegado de Personal", "explicacion": "Examen 2025."},
+    {"pregunta": "NO causa pérdida condición funcionario:", "opciones": ["Pérdida nacionalidad", "La sanción disciplinaria de suspensión de funciones que tuviera carácter firme", "Inhabilitación absoluta", "Jubilación"], "correcta": "La sanción disciplinaria de suspensión de funciones que tuviera carácter firme", "explicacion": "Examen 2025."},
+    {"pregunta": "Funcionario adscrito al Tribunal Constitucional:", "opciones": ["Activo", "Otras AAPP", "Servicios especiales", "Excedencia"], "correcta": "Servicios especiales", "explicacion": "Examen 2025."},
+    {"pregunta": "III Plan Igualdad AGE:", "opciones": ["10 ejes", "6 ejes 32 medidas", "10 ejes", "Seis ejes de actuación donde se desarrollan medidas de carácter transversal (68 medidas)"], "correcta": "Seis ejes de actuación donde se desarrollan medidas de carácter transversal (68 medidas)", "explicacion": "Examen 2025."},
+    {"pregunta": "NO es eje IV Plan Gobierno Abierto:", "opciones": ["Integridad", "Participación", "Transparencia", "Igualdad"], "correcta": "Igualdad", "explicacion": "Examen 2025."},
+    {"pregunta": "Foro Gobierno Abierto depende de:", "opciones": ["Secretaría de Estado de Función Pública", "DG Función Pública", "SG Planificación", "Dirección General de Gobernanza Pública"], "correcta": "Secretaría de Estado de Función Pública", "explicacion": "Examen 2025."},
+    {"pregunta": "Acoso por razón de sexo (Ley 3/2007):", "opciones": ["Directa", "Indirecta", "Sexual", "Acoso por razón de sexo"], "correcta": "Acoso por razón de sexo", "explicacion": "Examen 2025."},
+    {"pregunta": "Ley 39/2006 (Dependencia), capacidad de controlar decisiones:", "opciones": ["Dependencia", "Autonomía", "Asistencia", "ABVD"], "correcta": "Autonomía", "explicacion": "Examen 2025."},
+]
+
+    // ==========================================
+    // LÓGICA DEL APLICATIVO
+    // ==========================================
+
+    let testActual = [];
+    let indicePregunta = 0;
+    let aciertos = 0;
+    let fallos = 0;
+    let preguntaActualObj = null;
+
+    // Utilidad: Barajar Array (Fisher-Yates)
+    function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+    }
+
+    // Navegación de pantallas
+    function cambiarPantalla(id) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+    }
+
+    function mostrarMenu() {
+        cambiarPantalla('screen-menu');
+        document.getElementById('header-subtitle').innerText = "Simulador Oficial";
+    }
+
+    // Iniciar Test
+    function iniciarTest(numPreguntas) {
+        if (BASE_DATOS.length === 0 || (BASE_DATOS.length === 1 && BASE_DATOS[0].pregunta.includes("Ejemplo"))) {
+            alert("⚠️ AVISO: No has pegado las preguntas todavía en el código.");
+        }
+
+        // Clonar y barajar la base de datos completa
+        let copiaDB = [...BASE_DATOS];
+        shuffleArray(copiaDB);
+
+        // Cortar el número de preguntas solicitado
+        testActual = copiaDB.slice(0, numPreguntas);
+        
+        // Resetear contadores
+        indicePregunta = 0;
+        aciertos = 0;
+        fallos = 0;
+        
+        // Mostrar primera pregunta
+        cargarPreguntaUI();
+        cambiarPantalla('screen-quiz');
+    }
+
+    // Cargar Pregunta en UI
+    function cargarPreguntaUI() {
+        if (indicePregunta >= testActual.length) {
+            finalizarTest();
+            return;
+        }
+
+        preguntaActualObj = testActual[indicePregunta];
+        
+        // Actualizar cabecera y texto
+        document.getElementById('q-progress').innerText = `Pregunta ${indicePregunta + 1} de ${testActual.length}`;
+        document.getElementById('q-text').innerText = preguntaActualObj.pregunta;
+        document.getElementById('header-subtitle').innerText = "En curso...";
+
+        // Resetear UI
+        document.getElementById('feedback-area').style.display = 'none';
+        document.getElementById('btn-next').style.display = 'none';
+        
+        const container = document.getElementById('options-container');
+        container.innerHTML = '';
+
+        // Barajar opciones para esta pregunta específica
+        let opcionesBarajadas = [...preguntaActualObj.opciones];
+        shuffleArray(opcionesBarajadas);
+
+        // Crear botones
+        opcionesBarajadas.forEach(opcion => {
+            const btn = document.createElement('button');
+            btn.className = 'option-btn';
+            btn.innerText = opcion;
+            btn.onclick = () => verificarRespuesta(btn, opcion);
+            container.appendChild(btn);
+        });
+    }
+
+    // Verificar Respuesta
+    function verificarRespuesta(botonSeleccionado, textoSeleccionado) {
+        const opcionesBtns = document.querySelectorAll('.option-btn');
+        const esCorrecta = textoSeleccionado === preguntaActualObj.correcta;
+
+        // Deshabilitar todos los botones para que no se pulse dos veces
+        opcionesBtns.forEach(btn => btn.classList.add('disabled'));
+
+        if (esCorrecta) {
+            botonSeleccionado.classList.add('correct');
+            aciertos++;
+        } else {
+            botonSeleccionado.classList.add('wrong');
+            fallos++;
+            
+            // Buscar y resaltar la correcta visualmente
+            opcionesBtns.forEach(btn => {
+                if (btn.innerText === preguntaActualObj.correcta) {
+                    btn.classList.add('correct');
+                }
+            });
+        }
+
+        // Mostrar explicación
+        document.getElementById('explanation-text').innerText = preguntaActualObj.explicacion;
+        document.getElementById('feedback-area').style.display = 'block';
+        
+        // Mostrar botón siguiente y hacer scroll suave
+        const btnNext = document.getElementById('btn-next');
+        btnNext.style.display = 'block';
+        
+        // Scroll automático hacia abajo para ver la explicación en móviles pequeños
+        setTimeout(() => {
+            btnNext.scrollIntoView({ behavior: 'smooth', block: 'end' });
+        }, 100);
+    }
+
+    function siguientePregunta() {
+        indicePregunta++;
+        cargarPreguntaUI();
+        // Scroll arriba al cambiar de pregunta
+        window.scrollTo(0, 0);
+    }
+
+    function finalizarTest() {
+        const total = testActual.length;
+        const nota = (aciertos / total) * 10;
+        
+        document.getElementById('final-score').innerText = nota.toFixed(1);
+        document.getElementById('total-correct').innerText = aciertos;
+        document.getElementById('total-wrong').innerText = fallos;
+
+        const msgElement = document.getElementById('final-msg');
+        if (nota >= 5) {
+            msgElement.innerText = "🎉 ¡APROBADO!";
+            msgElement.style.color = "var(--success)";
+        } else {
+            msgElement.innerText = "💀 SUSPENSO. Toca repasar.";
+            msgElement.style.color = "var(--error)";
+        }
+
+        document.getElementById('header-subtitle').innerText = "Resultados";
+        cambiarPantalla('screen-results');
+    }
+</script>
+
+</body>
+</html>
